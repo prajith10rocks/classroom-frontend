@@ -1,37 +1,50 @@
-import { 
-  DataProvider, 
-  GetListParams,  
-  BaseRecord, 
-  GetListResponse
-} from "@refinedev/core";
-import { MOCK_SUBJECTS } from "@/constants/mock_data";
+import { BACKEND_BASE_URL } from "@/constants";
+import { ListResponse } from "@/types"
+import {createDataProvider, CreateDataProviderOptions} from "@refinedev/rest"
 
+const options: CreateDataProviderOptions = {
 
-export const dataProvider: DataProvider = {
-    getList: async <TData extends BaseRecord = BaseRecord>(
-        params: GetListParams
-    ): Promise<GetListResponse<TData>> => {
+    getList: {
         
-        // Destructure the parameters inside the body to make typing cleaner
-        const { resource, pagination, filters, sorters } = params;
-        if(resource !== 'subjects')
-        {
-            return {
-            data: [] as TData[], // Your mapped array data
-            total: 0  // Total count for server-side pagination
+        // Refine combines BACKEND_BASE_URL + resource
+        getEndpoint: ({ resource }) => resource,
+
+        buildQueryParams: async ({resource, pagination, filters}) => {
+            const page = pagination?.currentPage ?? 1;
+            const pageSize = pagination?.pageSize ?? 10;
+            const params: Record<string, string|number> = { page, limit: pageSize};  //this is gonna destructure in backend API
+
+            filters?.forEach((filter) => {
+                const field = 'field' in filter ? filter.field : '';
+                const value = String(filter.value);
+
+                if(resource == 'subjects')
+                {
+                    if(field == 'department')
+                    {
+                        params.department = value
+                    }
+                    if(field == 'name' || field == 'code')
+                    {
+                        params.search = value;
+                    }
+                }
+            })
+
+            return params;
+        },
+
+        mapResponse: async (response) => {
+            const payload: ListResponse = await response.clone().json();
+            return payload.data ?? [];
+        },
+        getTotalCount: async (response) => {
+            const payload: ListResponse = await response.clone().json();
+            return payload.pagination ?.total ?? payload.data ?.length ?? 0;
         }
-        }
-        return {
-            data: MOCK_SUBJECTS as unknown as TData[],
-            total: MOCK_SUBJECTS.length,
-        }
-    },
-    getOne: async () => { throw new Error('This function is notpresent in mock')},
-    create: async () => { throw new Error('This function is notpresent in mock')},
-    update: async () => { throw new Error('This function is notpresent in mock')},
-    deleteOne: async () => { throw new Error('This function is notpresent in mock')},
-    
-    getApiUrl: () => ''
-};
+    }
+}
 
 
+const { dataProvider } = createDataProvider(BACKEND_BASE_URL,  options);
+export { dataProvider };

@@ -4,10 +4,10 @@ import { Breadcrumb } from "@/components/refine-ui/layout/breadcrumb";
 import { ListView } from "@/components/refine-ui/views/list-view";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DEPARTMENTS_OPTIONS } from "@/constants";
+import { DEPARTMENT_OPTIONS } from "@/constants";
 import { useTable } from "@refinedev/react-table";
 import { Search } from "lucide-react";
-import { useState,useMemo } from "react";
+import { useState,useMemo, useEffect } from "react";
 import { subject } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { ColumnDef } from "@tanstack/react-table";
@@ -18,7 +18,7 @@ const SubjectList = () => {
 
     const departmentFilters = selectedDepartment === 'all' ? [] : [
         {
-            field: 'dept',
+            field: 'department',
             operator: 'eq' as const,
             value: selectedDepartment
         }
@@ -26,7 +26,7 @@ const SubjectList = () => {
 
     const searchFilters = searchQuery ? [
         {
-            field: name,
+            field: "name",
             operator: 'contains' as const,
             value: searchQuery
         }
@@ -51,7 +51,7 @@ const SubjectList = () => {
             },
             {
                 id: 'dept',
-                accessorKey: 'department',  //which field should be displayed
+                accessorKey: 'department.name',  //which field should be displayed
                 size: 150,
                 header: () =>  <p className="column-title">Department</p>,
                 cell: (props) => <Badge variant="secondary">{props.getValue<string>()}</Badge>
@@ -66,7 +66,7 @@ const SubjectList = () => {
         ],[]),
 
        refineCoreProps: {
-        resource: 'subjects',
+        resource: 'subjects',  //THE MAGIC KEYWORD to connect data provider
         pagination:{pageSize: 10, mode: 'server'},
         filters: {
             permanent: [...departmentFilters, ...searchFilters]
@@ -78,6 +78,14 @@ const SubjectList = () => {
         }
        }
     });
+
+
+    // useEffect(() => {
+    //     subjectTable.setFilters([
+    //         ...departmentFilters, 
+    //         ...searchFilters
+    //     ])
+    // },[searchQuery,selectedDepartment])
 
   return (
     <ListView>
@@ -108,9 +116,9 @@ const SubjectList = () => {
                             <SelectItem value="all"> 
                                 All Department
                             </SelectItem>
-                            { DEPARTMENTS_OPTIONS.map(department => (
+                            { DEPARTMENT_OPTIONS.map(department => (
                                 <SelectItem key={department.value} value={department.value}>
-                                    {department.Label}
+                                    {department.label}
                                 </SelectItem>
                             ))}
                         </SelectContent>
